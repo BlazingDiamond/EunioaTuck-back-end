@@ -1,11 +1,11 @@
 # myapp/serializers.py
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from .models import UserProfile, Post
 from myapp import models
-from django.contrib.auth import get_user_model, authenticate
+from django.contrib.auth import authenticate
+from django.utils.translation import gettext_lazy as _
 
-User = get_user_model()
+User = models.User
 
 
 class LoginSerializer(serializers.Serializer):
@@ -16,38 +16,49 @@ class LoginSerializer(serializers.Serializer):
         trim_whitespace=False,
         write_only=True,
     )
-    token = serializers.CharField
+    token = serializers.CharField(read_only=True)
 
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
 
         if email and password:
-            user = authenticate(
-                request=self.context.get("request"), username=email, password=password
-            )
+            try:
+                # 1. Look up the user by email using the correct User model (from get_user_model)
+                user = User.objects.get(email__exact=email)
+            except User.DoesNotExist:
+                user = None  # User not found
 
-            if not user:
-                msg = "Invalid credentials."
+            # 2. Check if the user was found AND if the password is correct
+            if user is None or not user.check_password(password):
+                msg = _("Invalid credentials.")
                 raise serializers.ValidationError(msg, code="authorization")
+
+            # 3. (Optional but good practice) Check if the user is active
+            if not user.is_active:
+                msg = _("User account is disabled.")
+                raise serializers.ValidationError(msg, code="authorization")
+
         else:
-            msg = 'Must include "email" and "password".'
+            msg = _('Must include "email" and "password".')
             raise serializers.ValidationError(msg, code="authorization")
 
+        # The authenticated user is stored in 'attrs'
         attrs["user"] = user
         return attrs
 
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    email = serializers.EmailField(required=True)
+    # email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True)
 
     class Meta:
-        model = User
+        model = models.User
         fields = ("username", "email", "password")
 
     def create(self, validated_data):
-        user = User.objects.create_user(
+        user = models.User.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
             password=validated_data["password"],
@@ -81,3 +92,11 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Product
         fields = ["id", "image"]
+
+
+class AccountSerializer(serializers.ModelSerializer):
+    user_profile = serializers.StringRelatedField()
+
+    class Meta:
+        model = models.Account
+        fields = "__all__"

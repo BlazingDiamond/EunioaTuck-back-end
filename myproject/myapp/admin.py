@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import Product
+from myapp import models
+
+admin.site.register(models.User)
 
 
-admin.site.register(Product)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ("username", "email", "account")
+    search_fields = ("username", "email")
+    list_filter = ("account",)
+
+
+admin.site.register(models.Product)
+admin.site.register(models.Account)

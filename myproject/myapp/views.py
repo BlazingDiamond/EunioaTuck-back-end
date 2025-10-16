@@ -1,6 +1,6 @@
 # myapp/views.py
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.models import User
+
 from rest_framework import generics, viewsets, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -18,12 +18,18 @@ from myapp import serializers
 from myapp import models
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.contrib.auth import get_user_model
 
 
 class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
+    queryset = models.User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        models.Account.objects.create(user=user, balance=0.00)
+        return user
 
 
 class LoginView(generics.GenericAPIView):
@@ -85,7 +91,7 @@ class ProductsListView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
 
-class ProductImageView(generics.ListAPIView):
-    queryset = models.Product.objects.exclude(image="")
-    serializer_class = serializers.ProductImageSerializer
+class AccountViewSet(viewsets.ModelViewSet):
+    queryset = models.Account.objects.all()
+    serializer_class = serializers.AccountSerializer
     permission_classes = [AllowAny]

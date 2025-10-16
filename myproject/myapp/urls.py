@@ -27,5 +27,9 @@ urlpatterns = [
         "userprofiles/<int:pk>/", UserProfileDetail.as_view(), name="userprofile-detail"
     ),
     path("products/", views.ProductsListView.as_view(), name="product-list"),
-    path("product_images/", views.ProductImageView.as_view(), name="product-images"),
+    path(
+        "account/",
+        views.AccountViewSet.as_view({"get": "list", "post": "create"}),
+        name="account-list-create",
+    ),
 ]
