@@ -21,7 +21,7 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
-
+        # gemini helped with this part
         if email and password:
             try:
                 # 1. Look up the user by email using the correct User model (from get_user_model)
@@ -95,7 +95,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class AccountSerializer(serializers.ModelSerializer):
-    user_profile = serializers.StringRelatedField()
+    user = serializers.StringRelatedField()
 
     class Meta:
         model = models.Account
